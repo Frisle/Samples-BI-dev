@@ -416,15 +416,17 @@ ClassMethod GeneratePatientQuerySample(patCount As %Integer = 100)
 /// the definitions of these cubes.
 ClassMethod BuildRelatedCubes()
 {
-	do ##class(%DeepSee.Utils).%BuildCube("relatedcubes/cities")
-    do ##class(%DeepSee.Utils).%BuildCube("relatedcubes/doctors")
-
-    // Can build these in either order:
-    do ##class(%DeepSee.Utils).%BuildCube("relatedcubes/patients")
-    do ##class(%DeepSee.Utils).%BuildCube("relatedcubes/cityrainfall")
-
-    // Build this one after relatedcubes/patients
-    do ##class(%DeepSee.Utils).%BuildCube("relatedcubes/allergies")
+    set tBuildList=$listbuild("relatedcubes/cities","relatedcubes/doctors","relatedcubes/patients","relatedcubes/cityrainfall","relatedcubes/allergies")
+    // If %BuildOneCube exists, it means we can pass a list of cubes into %BuildCube
+    // - This will avoid excessive rebuilds since %BuildCube now automatically accounts for dependencies
+    // Else, it is an older version and we need to build each cube individually
+    if ##class(%Dictionary.CompiledMethod).%ExistsId("%DeepSee.Utils||%BuildOneCube") {
+        do ##class(%DeepSee.Utils).%BuildCube(tBuildList)
+    } else {
+        for tBuildPosition=1:1:$listlength(tBuildList) {
+            do ##class(%DeepSee.Utils).%BuildCube($listget(tBuildList,tBuildPosition))
+        }
+    }
 }
 
 /// Builds the cubes in the correct order for the compound cube example.
